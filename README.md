@@ -1,6 +1,6 @@
 File thesis.pdf contains my bachelor thesis.
 
-Next, the underlying codes for producing tables with results have been uploaded. Dependencies of individual functions are depicted in the figure function_dependencies.png.
+Next, the underlying codes for producing tables with results have been uploaded. Dependencies of individual functions are depicted in the figure function_dependencies.png. Note: functions from load_names.R (the only one not contained in the graph) are auxiliary and used throughout the code esp. when calculating dimensions is needed.
 
 The main script for simulating is simulacni_studie.R. This is the only place where parameters are to be modified.
 
