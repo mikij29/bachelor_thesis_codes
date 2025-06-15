@@ -131,15 +131,23 @@ generate_data = function(ss = 200, c0 = 1, px1 = TRUE, dx1_type = "n", dx1_mean 
   
   y = c0 + c1*x1 + c2*x2 + eps
   
-  if(!px2 && !px1)
+  if(!px2 && !px1) {
     regressors = NA
-  else if(!px2)
+    beta_true = c0
+  }
+  else if(!px2) {
     regressors = x1
-  else if(!px1)
+    beta_true = c(c0, c1)
+  }
+  else if(!px1) {
     regressors = x2
-  else
+    beta_true = c(c0, c2)
+  }
+  else {
     regressors = data.frame(cbind(x1, x2))
-  
-  return(list("regressors" = regressors, "response" = y))
+    beta_true = c(c0, c1, c2)
+  }
+    
+  return(list("regressors" = regressors, "response" = y, "beta_true" = beta_true))
 }
 

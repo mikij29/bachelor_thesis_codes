@@ -20,12 +20,12 @@
   
   ### GENERAL SIMULATING PARAMETERS
   {
-    simnum = 1    # simulation number... helps in saving the data
+    simnum = 3    # simulation number... helps in saving the data
     rank = 1    # option for no parallel computation
     # rank = Sys.getenv("RANK")    # option for parallel computation - instead of running this same script multiple times (or setting number of samples 'nos' higher than 1), via this command and via batch .sh script submitted to a computational cluster, this script might be performed simultaneously on multiple nodes - each run is then distinguished from others via this variable 'rank'
     set.seed(rank)    # comment/uncomment for setting seed
     ss = 200    # sample size
-    nos = 2    # number of samples
+    nos = 1    # number of samples
   }
   
   ### MODEL SETTINGS 
@@ -97,7 +97,7 @@
       {e_lws = T; lws_1 = T; lws_2 = T; lws_3 = T; lws_4 = T; lws_5 = T; dd_lws = T; dd_wls = T}    # least weighted squares switch & which weight functions to use
       eps_w = 10^(-9)    # One parameter of iterative LWS procedure to be modified here... others (yet) have to be modified in the source script lws.R.
       sim_oie = F    # (Only Initial Estimator) Should we simulate the initial estimator only - without the following LWS procedure? 
-      {i_ls = F; i_ltsMy = F; i_lts = F; i_lms = F; i_s = TRUE}    # Which initial estimators to use. (ltsMy stands for author's own implemented least trimmed squares estimator (via the function lws))
+      {i_ls = T; i_ltsMy = T; i_lts = T; i_lms = T; i_s = TRUE}    # Which initial estimators to use. (ltsMy stands for author's own implemented least trimmed squares estimator (via the function lws))
       ninit = 555    # number of iterations of the initial estimator
     }
       
@@ -119,28 +119,28 @@
   
   ### OUTPUT CHOICES
   {
-    simnum_out = 1    # SIMulation NUMber
+    simnum_out = 3    # SIMulation NUMber
     lenora = 1    # LENgth Of RAnks (it needs to be provided)
     
     {out_est = T; out_var = T}    # Whether to produce coefficient estimation and/or variance estimation tables.
     est_print = c("LWS-1", "LWS-2", "LWS-3", "LWS-4", "LWS-5", "dd-LWS", "dd-WLS", "LS", "MMko", "MM", "REWLS", "S", "LTS", "LMS")    # This vector follows the default order of estimators in tables, if they are all 'switched on'. The purpose of this vector is to give estimators in the tables other (more suitable) names.
     sand_print = c("LWS-1", "LWS-2", "LWS-3", "LWS-4", "LWS-5", "dd-LWS", "dd-WLS", "LS")    # (relevant only for variance table) The same as est_print, however here only the estimators for the sandwich method are included.
     # So these are default orders of estimators, as they come out of simulations. However, we might want to permute them...
-    {permute_est = F; permute_var = F}
+    {permute_est = T; permute_var = T}
     # ...hence the following functions. They are used inside functions 'produce_table_est' and 'produce_table_var' from the script 'data_functions.R'.
     permute_ests = function(ests) return(ests[c(8, 1:5, 13, 11, 6, 7, 10, 14, 12, 9)])
     permute_vars = function(vars) return(vars[c(8,1:7)])
     # some manual parameters are needed in that case:
     {noest_out = 14; nosand_out = 8}    # total number of estimators and number of sandwich-related estimators 
     
+    kick_out = T    # if it was computed - to get rid of "MMko" estimator (as we might have too much of MM type estimators for our table...)
     latex = F    # Do we want to create latex file output? If not, tables will be printed into console.
     
     ## OPTIONS REGARDING COEFFICIENT ESTIMATES TABLE ONLY ('out_est'):
     {
       {MSEoC = T; MSE = T; TMSE = T; WMSE = T}    # which metrics of errors do we want to consider
       alphas = c(0.7, 0.75, 0.8, 0.9)    # for which values of alpha to evaluate TMSE and WMSE
-      kick_out = T    # if it was computed - to get rid of "MMko" estimator (as we might have too much of MM type estimators for our table...)
-      mean_btst = T    # if they were computed - include mean bootstrap estimators in the resulting table?
+      mean_btst = F    # if they were computed - include mean bootstrap estimators in the resulting table?
       min_bold = T    # should the first minimal value in each column (a column corresponds to one evaluated error metric) be printed in bold? (only if latex = T)
     }
   }    
@@ -245,6 +245,8 @@
           
           regressors = data$regressors
           response = data$response
+          if(i == 1)    # enough to be saved only once
+            beta_true = data$beta_true
           
           m = 1
           for(iniest in iniestnames) {
@@ -342,30 +344,31 @@
       }
       
       dir.create(paste0("./qsim", simnum))
-      save(beta, xmse, diva, time, diva_W, swch_nonswch, file = paste0("./qsim", simnum, "/qsim", simnum, "_", as.integer(rank), ".RData"))
+      save(beta, xmse, diva, time, diva_W, swch_nonswch, beta_true, nosand, file = paste0("./qsim", simnum, "/qsim", simnum, "_", as.integer(rank), ".RData"))
       # my way of saving the data - compatible with 'simulacni_studie_out.R'
     }
   }
   
   #### PROCESSING DATA
   if(data_process) {
-    data = load_data(lenora = lenora, simnum = simnum_out)
+    simulated_data = load_data(lenora = lenora, simnum = simnum_out)
     
     # getwd()
     # setwd("..")
     # betab = data$betab
     # xmseb = data$xmseb
-
+    # data$beta_true
     
     if(out_est) {
-      produce_table_est(data, simnum = simnum_out, permute = permute_est, noest = noest_out, MSEoC = MSEoC, MSE = MSE, TMSE = TMSE, WMSE = WMSE, alphas = alphas, mean_btst = mean_btst, latex = latex, kick_out = kick_out)
+      produce_table_est(simulated_data, simnum = simnum_out, permute = permute_est, MSEoC = MSEoC, MSE = MSE, TMSE = TMSE, WMSE = WMSE, alphas = alphas, mean_btst = mean_btst, latex = latex, kick_out = kick_out)
     }
     if(out_var) {
-      produce_table_var(data, simnum = simnum_out, permute = permute_var, nosand = nosand_out, noest = noest_out, latex = latex)
+      produce_table_var(simulated_data, simnum = simnum_out, permute = permute_var, kick_out = kick_out, latex = latex)
     }
   }
 }
 
+warnings()
 beta
 xmse
 diva

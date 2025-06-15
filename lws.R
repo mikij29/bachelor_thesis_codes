@@ -24,8 +24,8 @@ source("psi_indep.R")
 
 is_full_rank <- function(mx, tol = .Machine$double.eps^0.5) {
   # helping function for assessing correctness of the input
-  if (!(is.matrix(mx) || is.data.frame(mx))) {
-    stop("Input must be a matrix or data frame.")
+  if (!(is.vector(mx) || is.matrix(mx) || is.data.frame(mx))) {
+    stop("Input must be a vector, matrix or data frame.")
   }
   
   n <- NROW(mx)

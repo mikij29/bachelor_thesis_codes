@@ -100,6 +100,9 @@ var_sandwich = function(response, regressors = NA, e_lws = TRUE, lws_1 = TRUE, l
       matrix_time = matrix_time + system.time({
         if(icpt_only)
           X_i = 1
+        else if(p == 2)
+          X_i = c(1, regressors[i])
+          # X_i = c(1, unlist(regressors[i]))
         else
           X_i = c(1, unlist(regressors[i,]))
           # data.frame je totiz typu list

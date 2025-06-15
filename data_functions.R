@@ -47,7 +47,7 @@
 # - latex - T/F - do you want to produce a latex table? If not, the table is printed only in console
 
 # OUTPUT:
-# - latex file OR console output
+# - latex file OR console output, which contain estimate of variance of each element of the vector of estimated coefficients
 
 
 # PRODUCE_TABLE_EST
@@ -66,7 +66,7 @@
 # - min_bold - T/F - should the minimal value in each column be printed in bold?
   
 # OUTPUT:
-# - latex file OR console output
+# - latex file OR console output, which contain values of selected metrics of errors for given coefficient estimators
 
 
 source("gmse.R")
@@ -146,16 +146,21 @@ load_data = function(lenora = 200, simnum = 71) {
   
   setwd("..")
   
-  return(list("betab" = betab, "xmseb" = xmseb, "divab" = divab, "timeb" = timeb, "diva_W_b" = diva_W_b, "swnsw" = swnsw, "nos" = nos, "lenora" = lenora, "simnum" = simnum))
+  # in older simulated data, these values were not saved (they were not modified) - hence, here we handle the case whey they're missing:
+  if(!exists("nosand"))
+    print("Yes!")
+  if(!exists("nosand"))
+    nosand = 8
+  if(!exists("beta_true"))
+    beta_true = c(1, 2, -3)
+  
+  return(list("betab" = betab, "xmseb" = xmseb, "divab" = divab, "timeb" = timeb, "diva_W_b" = diva_W_b, "swnsw" = swnsw, "nos" = nos, "lenora" = lenora, "simnum" = simnum, "nosand" = nosand, "beta_true" = beta_true))
 }
 
 
-process_data = function(betab, xmseb, MSEoC = T, MSE = T, TMSE = T, WMSE = T, alphas = c(0.7, 0.75, 0.8, 0.9), nos = 10, lenora = 200, simnum = 61, reason = 1) {
+process_data = function(betab, xmseb, MSEoC = T, beta_true = c(1, 2, -3), MSE = T, TMSE = T, WMSE = T, alphas = c(0.7, 0.75, 0.8, 0.9), nos = 1, lenora = 1, simnum = 1, reason = 1) {
   # function concerning various characteristics of estimated coefficients themselves (not the variance of these estimates)
   
-  # alphas = c(0.7, 0.75, 0.8, 0.9)
-  # {MSEoC = T; MSE = T; TMSE = T; WMSE = T}
-  # valies
   noalpha = length(alphas)
   nometrics = MSEoC + MSE + noalpha * (TMSE + WMSE)
   metricsnames = array(dim = nometrics)
@@ -171,9 +176,7 @@ process_data = function(betab, xmseb, MSEoC = T, MSE = T, TMSE = T, WMSE = T, al
     # if(noiniest == 1) {
       j = 1
       if(MSEoC) {
-        valies[j,,,] = apply(betab, c(1, 3, 4), beta_mse)
-        # valies[j,,,] = apply(betab, c(1, 3, 4), beta_mse, simplify = F)
-        # replacing c(1, 3) by c(1, 3, 4) suddenly works... for the case it would not again, I think "simplify = F" could have been a solution
+        valies[j,,,] = apply(betab, c(1, 3, 4), beta_mse, beta_true = beta_true)
         metricsnames[j] = "MSEoC"
         j = j + 1
       }
@@ -246,7 +249,7 @@ process_data = function(betab, xmseb, MSEoC = T, MSE = T, TMSE = T, WMSE = T, al
   # apply(swnswM, c(2,3), mean)
   
   
-produce_table_var = function(data, simnum = 71, permute = T, nosand = 8, noest = 14, latex = F) {
+produce_table_var = function(data, simnum = 71, permute = T, kick_out = T, latex = F) {
   
   divabM = data$divab
   divabMW = data$diva_W_b
@@ -258,19 +261,19 @@ produce_table_var = function(data, simnum = 71, permute = T, nosand = 8, noest =
   tab_var[,1:7] = tab_impr
   
   if(permute) {
+    nosand = data$nosand
+    noest = dim(data$timeb)[2]
     tab_var = cbind(tab_var[,permute_vars(1:nosand)], tab_var[,nosand+permute_ests(1:noest)])
     est_print = permute_ests(est_print)
     sand_print = permute_vars(sand_print)
-    # tab_var_semifinal = cbind(tab_var[,permute_vars(1:nosand)], tab_var[,nosand+permute_ests(1:noest)])
-    # est_print_p = permute_ests(est_print)
-    # sand_print_p = permute_vars(sand_print)
   }
-  # dimnames(tab_var_semifinal)[[2]] = c(sand_print_p, paste0("B", est_print_p))
   dimnames(tab_var)[[2]] = c(sand_print, paste0("B-", est_print)) # "B" stands for Bootstrap
+  
+  if(kick_out)
+    tab_var = tab_var[,!(colnames(tab_var) == "B-MMko")]
   
   if(latex) {
     tab_var_final = t(formatC(tab_var, digits = 3, format = "f"))
-    # print(xtable(tab_var_final, type = "latex"), file = paste0("D:/skola/bc_work/thesis-en/tab/new_var_", simnum, ".tex"), only.contents = TRUE, include.colnames = FALSE, hline.after = NULL)
     print(xtable(tab_var_final, type = "latex"), file = paste0("./tab_var_", simnum, ".tex"), only.contents = TRUE, include.colnames = FALSE, hline.after = NULL)
   }
   else {
@@ -280,11 +283,12 @@ produce_table_var = function(data, simnum = 71, permute = T, nosand = 8, noest =
   return(0)
 }
   
-
-produce_table_est = function(data, simnum = 71, permute = T, noest = 14, MSEoC = T, MSE = T, TMSE = T, WMSE = T, alphas = c(0.7, 0.75, 0.8, 0.9), mean_btst = T, latex = F, min_bold = T, kick_out = T) {
+# data = load_data(simnum = 1006, lenora = 1)
+produce_table_est = function(data, simnum = 71, permute = T, MSEoC = T, MSE = T, TMSE = T, WMSE = T, alphas = c(0.7, 0.75, 0.8, 0.9), mean_btst = T, latex = F, min_bold = T, kick_out = T) {
   # data... in format of an output from the function 'load_data'
   {
-    valies = process_data(betab = data$betab, xmseb = data$xmseb, MSEoC = MSEoC, MSE = MSE, TMSE = TMSE, WMSE = WMSE, alphas = alphas, nos = data$nos, lenora = data$lenora, simnum = data$simnum)
+    # valies = process_data(betab = data$betab, xmseb = data$xmseb, nos = data$nos, lenora = data$lenora, simnum = data$simnum)
+    valies = process_data(betab = data$betab, xmseb = data$xmseb, MSEoC = MSEoC, beta_true = data$beta_true, MSE = MSE, TMSE = TMSE, WMSE = WMSE, alphas = alphas, nos = data$nos, lenora = data$lenora, simnum = data$simnum)
     metricsnames = dimnames(valies)[[1]]
     nometrics = length(metricsnames)
     
@@ -296,7 +300,6 @@ produce_table_est = function(data, simnum = 71, permute = T, noest = 14, MSEoC =
     bn_cut_ind = match(betanames_cut, betanames)
     finals = length(bn_cut_ind)
     
-    # est_print_p = permute_ests(est_print)
     if(permute)
       est_print = permute_ests(est_print)
   }
@@ -304,44 +307,37 @@ produce_table_est = function(data, simnum = 71, permute = T, noest = 14, MSEoC =
   dimnames(tab_prep)[[1]] = metricsnames
   dimnames(tab_prep)[[2]] = betanames_cut
   for(i in 1:nometrics) {
-    tab_prep[i,] = apply(valies[i,,betanames_cut,], 2, mean)
+    if(data$lenora * data$nos == 1)
+      tab_prep[i,] = valies[i,,betanames_cut,]
+    else
+      tab_prep[i,] = apply(valies[i,,betanames_cut,], 2, mean)
   }
+  noest = dim(data$timeb)[2]
   if(mean_btst) {
     # regular estimate, btst mean estimate
     tab_prep = cbind(tab_prep[,permute_ests(1:noest)], tab_prep[,permute_ests(noest+1:noest)])
-    # tab_est = cbind(tab_prep[,permute_ests(1:14)], tab_prep[,permute_ests(15:28)])
-    # dimnames(tab_est)[[2]] = c(est_print_p, paste0("B",est_print_p))
     dimnames(tab_prep)[[2]] = c(est_print, paste0("B-",est_print))
     # "B-" worked for identification purposes... there might have been some problem without it
   }
   else {
-    # tab_est = tab_prep[,permute_ests(1:14)]
-    # dimnames(tab_est)[[2]] = est_print_p
-    tab_prep = tab_prep[,permute_ests(1:14)]
+    tab_prep = tab_prep[,permute_ests(1:noest)]
     dimnames(tab_prep)[[2]] = est_print
   }
   if(kick_out)
-    # tab_est = tab_est[,!(colnames(tab_est) %in% c("MMko", "BMMko"))]
-    tab_prep = tab_prep[,!(colnames(tab_prep) %in% c("MMko", "BMMko"))]
+    tab_prep = tab_prep[,!(colnames(tab_prep) %in% c("MMko", "B-MMko"))]
   if(latex) {
     argmins = apply(tab_prep, 1, which.min)
-    # argmins = apply(tab_est, 1, which.min)
-    # tab_est_final = t(formatC(tab_est, digits = 3, format = "f"))
     tab_est_final = t(formatC(tab_prep, digits = 3, format = "f"))
     if(min_bold) {
       i = 1
       for (argmin in argmins) {
-        # if(i == 4 || i == 7)
         tab_est_final[argmin, i] = paste0("\\", "multicolumn{1}{B{.}{.}{2.3}}{", tab_est_final[argmin, i], "}")
-        # else
-        # tab_est_final[argmin, i] = paste0("\\", "multicolumn{1}{B{.}{.}{1.3}}{", tab_est_final[argmin, i], "}")
         i = i + 1
       }
     }
     print(xtable(tab_est_final, type = "latex"), file = paste0("./tab_est_", simnum, ".tex"), only.contents = TRUE, include.colnames = FALSE, hline.after = NULL, sanitize.text.function = identity)
   }
   else {
-    # tab_est_final = t(round(tab_est, digits = 3))
     tab_est_final = t(round(tab_prep, digits = 3))
     print(tab_est_final)
   }
