@@ -103,8 +103,7 @@ iterate = function(regressors, response, icpt_only, weights, J = 10000, eps = 10
     if(icpt_only)
       model = lm(response[srpp1o]~1)
     else
-      model = lm(response[srpp1o]~., data = data.frame(regressors[srpp1o,]))
-      # necessary to use data.frame here?
+      model = lm(response[srpp1o]~., data = regressors[srpp1o,])
     
     b0 = model$coefficients
     if(icpt_only)

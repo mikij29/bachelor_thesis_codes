@@ -117,7 +117,7 @@ var_sandwich = function(response, regressors = NA, e_lws = TRUE, lws_1 = TRUE, l
           if(k <= n_lws) 
             S_X_W[,,k] = S_X_W[,,k] + outer_prod*(u_ik^2)*weights[i,k]
         })
-        if (estname == "d.no.iter") {
+        if (estname == "dd_wls") {
           XTWX = XTWX + outer_prod * weights[i,k]
         }
         k = k + 1

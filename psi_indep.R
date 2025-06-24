@@ -46,5 +46,3 @@ psi_indep = function(type = 1, n, p, tau = 3/4, s = 10){
   }
 }
 
-# plot(psi_indep(type = 4, n = 200, p = 3))
-

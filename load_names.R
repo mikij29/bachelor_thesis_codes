@@ -63,38 +63,38 @@ load_estnames = function(e_lws = T, lws_1 = TRUE, lws_2 = TRUE, lws_3 = TRUE, lw
   i = 1
   if(e_lws) {
     if(lws_1) {
-      estnames[i] = "wf1"
+      estnames[i] = "lws-1"
       lws_names[i] = 1
       # we always start with lws (otherwise introduce another index)
       i = i + 1
     }
     if(lws_2) {
-      estnames[i] = "wf2"
+      estnames[i] = "lws-2"
       lws_names[i] = 2
       i = i + 1
     }
     if(lws_3) {
-      estnames[i] = "wf3"
+      estnames[i] = "lws-3"
       lws_names[i] = 3
       i = i + 1
     }
     if(lws_4) {
-      estnames[i] = "wf4"
+      estnames[i] = "lws-4"
       lws_names[i] = 4
       i = i + 1
     }
     if(lws_5) {
-      estnames[i] = "wf5"
+      estnames[i] = "lws-5"
       lws_names[i] = 5
       i = i + 1
     }
     if(dd_lws) {
-      estnames[i] = "d.iter"
+      estnames[i] = "dd_lws"
       lws_names[i] = "dd_lws"
       i = i + 1
     }
     if(dd_wls) {
-      estnames[i] = "d.no.iter"
+      estnames[i] = "dd_wls"
       lws_names[i] = "dd_wls"
       i = i + 1
     }
@@ -139,30 +139,32 @@ load_estnames = function(e_lws = T, lws_1 = TRUE, lws_2 = TRUE, lws_3 = TRUE, lw
 load_iniestnames = function(i_ls = F, i_ltsMy = F, i_lts = F, i_lms = F, i_s = TRUE) {
   noiniest = i_ls + i_ltsMy + i_lts + i_lms + i_s
   if(noiniest == 0) {
-    print("We have no initial estimators! Hope you switched off e_lws as well.")
-    return(0)
+    # print("We have no initial estimators! Hope you switched off e_lws as well.")
+    iniestnames = NA
   }
-  iniestnames = rep(NA, noiniest)
-  i = 1
-  if(i_ls) {
-    iniestnames[i] = "ls"
-    i = i + 1
-  }
-  if(i_ltsMy) {
-    iniestnames[i] = "ltsMy"
-    i = i + 1
-  }
-  if(i_lts) {
-    iniestnames[i] = "lts"
-    i = i + 1
-  }
-  if(i_lms) {
-    iniestnames[i] = "lms"
-    i = i + 1
-  }
-  if(i_s) {
-    iniestnames[i] = "S"
-    i = i + 1
+  else {
+    iniestnames = rep(NA, noiniest)
+    i = 1
+    if(i_ls) {
+      iniestnames[i] = "ls"
+      i = i + 1
+    }
+    if(i_ltsMy) {
+      iniestnames[i] = "ltsMy"
+      i = i + 1
+    }
+    if(i_lts) {
+      iniestnames[i] = "lts"
+      i = i + 1
+    }
+    if(i_lms) {
+      iniestnames[i] = "lms"
+      i = i + 1
+    }
+    if(i_s) {
+      iniestnames[i] = "S"
+      i = i + 1
+    }
   }
   return(list("names" = iniestnames, "number" = noiniest))
 }
